@@ -1,0 +1,139 @@
+<?xml version="1.0" ?>
+
+<Problem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="geos_v0.0.xsd">
+
+<Solvers>
+<!-- 
+!!!!!!!!!!Change below for Fig.7,8 !!!!!!!
+ch4KerogenMassFrac/waterKerogenMassFrac: decomposed chk4/water ratio; 
+
+!!!!!!!!!!Change BoundaryCondition for Fig.9 !!!!!!!
+scale="12" is per wedge element (11.25 C), so total heat flux is 12 * 360/11.25 * 5 (vertical elements)
+
+!!!!!!!!!!Change AquSaturatin for Fig.10 !!!!!!!
+
+!!!!!!!!!!Change permFactor for Fig.11 !!!!!!!
+
+dryThermalConductivity: Undecomposed zone, W/m/K;
+wetThermalConductivity: Decomposed zone, W/m/K;
+rockHeatCap: 615 J/kg/K;
+permFactor: a factor to adjust the permeability; permeability is calculated from porosity based on the experiental curve (Fig.19 From K. Bisnovat et al. Marine and Petroleum Geology 64 (2015)). 
+Permeability = permFactor * pow(10, 10 * (porosity) - 5) * 0.986923E-15;
+-->
+     <ThreePhaseKerogenMatrixFlowSolver name="CoupledSolver"
+                fieldName="Pressure"
+                tolNewton = "5.e-5"
+                tol="1e-12"
+                useMLPreconditioner="0"
+                numComponent = "2"
+                rockDensity="2600.0"
+                dryThermalConductivity = "0.64"
+                wetThermalConductivity = "0.8"
+                rockHeatCap = "615.0"
+                poreCompressibility = "1.e-9"
+                poreExpansivity =  "0.0"
+                klinkenbergFactor = "0.0"		       
+                scalingOption="1"
+                verbose= "0"
+                maxIterNewton = "8"
+                phaseSwitchNumLimit = "20"
+                derivativeIncrement = "1.0e-8"
+                convergenceTolerance = "1e-6"
+                relativeIncrementTol = "1e-20"
+                capPressEquationNum = "3"
+                relaPermEquationNum = "2"
+                gravityVector="0 0 9.8"
+                coupleWithPPFlow = "0" 
+                debug="0"
+                dtMin="10.0" dtMax="86400.0"
+                maxSanityT = "600"
+                dtCuttingBackThreshold = "1000"
+                dtIncFactor = "2.0"                
+                dtReductionFactor="3.0"
+		        useDirectSolver = "0"
+                referencePerm = "1.0e-12"
+                permFactor = "1e1"  
+		        scalingProcessOption = "1"
+                heatConductivityOpt = "1" 
+		        scaleJacobianMatrix = "0"
+	            fixZeroDiagonal = "0"
+		        KSPMethodType = "0"
+                linearSolverType = "0"
+		        ch4KerogenMassFrac = "0.4"
+                waterKerogenMassFrac = "0.6"/>
+
+ </Solvers>
+
+
+  <Mesh 
+    xcoords="0.5 20.5 21.6539 22.8728	24.1603	25.5203	26.9568	28.4742	30.077	31.7701	33.5584	35.4474	37.4427	39.5503	41.7766	44.1282	46.6121	49.2359	52.0074	54.9349	58.0271	61.2934	64.7436	68.388	72.2376	76.3038	80.5989	85.1358	89.928	94.99	100.337	105.985	111.951	118.252	124.909	131.94	139.367	147.212	155.498	164.251	173.497	183.263	193.579	204.475	215.985	228.143	240.985	254.549	268.878	284.013	300"
+    ycoords="-5.625 5.625"
+    zcoords="-10 0.0 50.0"
+    nx="100 1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1"
+    ny="1" 
+    nz="10 50"
+    elementType="C3D8"
+    mapToRadial="1"
+    regionNames="Region"
+	/>
+
+
+  <ElementRegions>
+    <ElementRegion name="Region" elementtype="poly" >
+        <LinearElasticMaterial ShearModulus="2e9"  Density="2600" BulkModulus="3.3333e9" />
+    </ElementRegion>
+  </ElementRegions>
+  
+  <Nodesets>
+    <!--type 1: radial coordinates-->
+    <Nodeset name="source" type="1" point1="0.0 0.0 -2.01" point2="0.0 0.0 3.01" radius = "0.71"/>
+   </Nodesets>
+
+  <SolverApplications>
+    <Application name="1" begintime="0.0" endtime="3.1536e9">
+      <Apply solver="CoupledSolver" toregions="Region"/>
+    </Application> 
+  </SolverApplications>
+
+ <InitialConditions>
+  <CalculateElementCenters/>
+    <!--phaseName: initial phase status
+     1: one phase, Aqueous only
+     2: two phases, Aqueous, Gas
+     3: three phases, Aqueous, kerogen, Gas
+     4: two phases, Aqueous, kerogen-->
+    <ConstantInitialCondition fieldname="phaseName" fieldtype="Integer" object="Element" toregions="Region" value="4" />	
+    <ConstantInitialCondition fieldname="AquSaturation" fieldtype="Scalar" object="Element" toregions="Region" value="0.5" />
+
+	<InitialConditionTable   toregions="Region" fieldname="FluidPressure" fieldtype="Scalar" object="Element" table="InitPressure" />
+    <ConstantInitialCondition fieldname="Temperature" fieldtype="Scalar" object="Element" toregions="Region" value= "80.0" />
+
+    <!--legacy dummy variable; the value is not used; permeability is calculated from porosity -->     
+    <ConstantInitialCondition fieldname="Permeability" fieldtype="Scalar" object="Element" toregions="Region" value="0.0" />
+    <ConstantInitialCondition fieldname="Porosity" fieldtype="Scalar" object="Element" toregions="Region" value="0.3" />
+ </InitialConditions>
+
+<BoundaryConditions>
+<!--heat flux (w) per element -->  
+  <BoundaryCondition object="Element" toregion="Region" fieldname="heatFluxRate" setnames="source" scale="12" timetable="fluxtable"  />
+</BoundaryConditions>
+
+
+<Tables>
+    <Table3D name="InitPressure"   x_file="x" y_file="y" z_file="z" voxel_file="InitPressure" interpolation="1"/>
+    <Table1D name="fluxtable"   coord="0.0 3.15e8 6.3e8 9.45e8 12.60e8"
+    value="1.0e3 8.0e2 6.0e2 4.0e2 2.0e2" 
+     />
+</Tables>
+
+<Partition>
+  <SpatialPartition xpar="7" ypar="1" zpar="4" />
+</Partition>
+    
+<Output  writePlot="1" writeRestart="0" plot_interval="5e6"  restart_interval="21000000.0"
+         plotfile_root="Plot_3D_baseline" parallel_silo="1" slave_directory="sub" 
+         writeFEMFaces="1" writeFEMEdges="0"/>
+
+</Problem>
+
+

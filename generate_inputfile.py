@@ -151,6 +151,13 @@ class InputGenerator(object):
         self.wgastot=(self.s[0,2]/self.s[0,0]+self.s[1,2]/\
             self.s[1,1]*self.s[0,1]/self.s[0,0])*self.MWt[2]/self.MWt[0]
 
+    def Import_BaseXML(self,fname='Base.xml'):
+		self.InputTree=ET.parse(fname)
+		self.InputRoot=self.BaseInputTree.get_root()
+	def Update_XML(self,fname):
+		print(self.InputRoot['Tables'].tag)
+		self.InputTree.write(fname)
+
     def Compute_HeatRadiation(self,tstart=0.01,nbins=10,makeplot=True):
         ''' This method computes the table representing the decaying heat by the
         nuclear decay of the nuclear waste. The inputs are as follows:
@@ -557,32 +564,32 @@ if __name__ == '__main__':
     Bestest.Compute_PTIsothermLinearEqn(0.1)
 
 
-    # Parameters for conservative estimate
-    tend=100.
-    KerogenElementaryComp=np.array([159.,180.,16.,3.,2.])
-    DecompStoichiometry=np.array([[1.,3.,2.,1.],\
-                                [0.,11.,33.,1.]])
-    DecompFrequency=np.array([5.0e16,5.0e15]) # frequency s^-1
-    DecompActivationEnergy=np.array([245.,245.*1.1])*1.0e3 # Activation energy kJ/mol * 1000J/kJ
-    DecompFreeVolume=33.0e-6 # m^3
-    tcooldown=1.0 # years
-    HeatDecaytsteps=20
-    PTIsothermSker=0.1
-    PTIsothermtreaction=5. #yrs
-    porosity=0.3
-    reservoirheight=60. # m
-    wastedepth=48. # m
-    wasteheight=5. # m
-    wasteradius=0.5 # m
-    nx=100
-    nz=20
+    # # Parameters for conservative estimate
+    # tend=100.
+    # KerogenElementaryComp=np.array([159.,180.,16.,3.,2.])
+    # DecompStoichiometry=np.array([[1.,3.,2.,1.],\
+    #                             [0.,11.,33.,1.]])
+    # DecompFrequency=np.array([5.0e16,5.0e15]) # frequency s^-1
+    # DecompActivationEnergy=np.array([245.,245.*1.1])*1.0e3 # Activation energy kJ/mol * 1000J/kJ
+    # DecompFreeVolume=33.0e-6 # m^3
+    # tcooldown=1.0 # years
+    # HeatDecaytsteps=20
+    # PTIsothermSker=0.1
+    # PTIsothermtreaction=5. #yrs
+    # porosity=0.3
+    # reservoirheight=60. # m
+    # wastedepth=48. # m
+    # wasteheight=5. # m
+    # wasteradius=0.5 # m
+    # nx=100
+    # nz=20
 
 
-    constest=InputGenerator(tend, KerogenElementaryComp,DecompStoichiometry,\
-        DecompFrequency,DecompActivationEnergy, DecompFreeVolume, tcooldown, \
-        HeatDecaytsteps,PTIsothermSker,PTIsothermtreaction,porosity,reservoirheight,\
-        wastedepth,wasteheight,nx,nz)
+    # constest=InputGenerator(tend, KerogenElementaryComp,DecompStoichiometry,\
+    #     DecompFrequency,DecompActivationEnergy, DecompFreeVolume, tcooldown, \
+    #     HeatDecaytsteps,PTIsothermSker,PTIsothermtreaction,porosity,reservoirheight,\
+    #     wastedepth,wasteheight,nx,nz)
 
-    constest.Compute_HeatRadiation()
-    constest.Compute_HeatOfReaction()
-    constest.Compute_PTIsothermLinearEqn(0.1)
+    # constest.Compute_HeatRadiation()
+    # constest.Compute_HeatOfReaction()
+    # constest.Compute_PTIsothermLinearEqn(0.1)
