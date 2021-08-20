@@ -16,9 +16,14 @@ class InputGenerator(object):
     tend                    = End of simulation. Units : years (is converted to
                             seconds when generating the input file).
 
-    KerogenElementaryComp  = Number of atoms for each element in the kerogen
+    KerogenElementaryComp   = Number of atoms for each element in the kerogen
                             model molecule. Should be in the order:
                             Carbon Hydrogen Oxygen Nitrogen Sulfur
+
+    KerogenDensity          = Kerogen density. Units: g/cc or kg/L or tonne/m^3
+
+    CokeDensity             = Coke (residual solid after pyrolysis) density.
+                            Units: g/cc or kg/L or tonne/m^3
 
     DecompStoichiometry     = Stoichiometric coefficients in the reactions of
                             kerogen to oil in the first row, then oil to gas in
@@ -75,13 +80,15 @@ class InputGenerator(object):
     nz                      = Number of grid blocks in the z-direction.
     """
 
-    def __init__(self, tend, KerogenElementaryComp, DecompStoichiometry,\
-        DecompFrequency,DecompActivationEnergy, DecompFreeVolume, tcooldown, \
-        HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,PorosityInit,\
+    def __init__(self, tend, KerogenElementaryComp,KerogenDensity,CokeDensity, \
+        DecompStoichiometry,DecompFrequency,DecompActivationEnergy, DecompFreeVolume, \
+        tcooldown, HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,PorosityInit,\
         reservoirdepth,reservoirthickness,wastedepth,wastethickness,nx,nz,\
         wasteradius=0.5,FuelSource='Uranium'):
         self.tend = tend
         self.zker = KerogenElementaryComp
+        self.rhoker = KerogenDensity
+        self.rhocoke = CokeDensity
         self.s = DecompStoichiometry
         self.A = DecompFrequency
         self.E = DecompActivationEnergy
@@ -180,6 +187,14 @@ class InputGenerator(object):
 
         # Changing the Molecular wieght, prosity, initial kerogen saturation
         self.InputRoot[0][0].set('MWker',str(self.MWt[0]))
+        cokemassfractionofkerogen=1.0-self.Compute_pyrolysis(1.,1.,1.,Comp='maxgas')
+        print('cokemassfractionofkerogen',cokemassfractionofkerogen)
+        cokevolumefractionofkerogen=cokemassfractionofkerogen*self.rhoker/self.rhocoke
+        print('cokevolumefractionofkerogen',cokevolumefractionofkerogen)
+        densityofgasinkerogen=(self.rhoker-cokevolumefractionofkerogen*self.rhocoke)/\
+            (1.0-cokevolumefractionofkerogen)
+        print('Kerogen simulated density',densityofgasinkerogen)
+        self.InputRoot[0][0].set('KerogenDens',str(densityofgasinkerogen*1.0e3)) # Simulator seems to take density in units of kg/m^3
         self.InputRoot[5][2].set('value',str(1.0-self.KerVFrac/(self.por+self.KerVFrac)))
         self.InputRoot[5][6].set('value',str(self.por+self.KerVFrac))
 
@@ -361,6 +376,9 @@ class InputGenerator(object):
             return (self.s[0,2]*(1.0-np.exp(-k1*t))+self.s[0,1]*(self.s[1,2]/self.s[1,1])*\
                 (1.+np.divide(k2*np.exp(-k1*t)-k1*np.exp(-k2*t),k1-k2)))\
                 *self.MWt[2]/self.MWt[0]
+        if Comp=='maxgas':
+            return (self.s[0,2]+self.s[0,1]*(self.s[1,2]/self.s[1,1]))*\
+                self.MWt[2]/self.MWt[0]
         elif Comp=='oil':
             return (self.s[0,1]*np.divide(k1*(np.exp(-k2*t)-np.exp(-k1*t)),k1-k2))*\
                 self.MWt[1]/self.MWt[0]
@@ -579,6 +597,8 @@ if __name__ == '__main__':
     DecompFrequency=np.array([5.0e16,5.0e15]) # frequency s^-1
     DecompActivationEnergy=np.array([245.,245.*1.1])*1.0e3 # Activation energy kJ/mol * 1000J/kJ
     DecompFreeVolume=33.0e-6 # m^3
+    KerogenDensity=1.46 # g/cc
+    CokeDensity=2.97 # g/cc
     tcooldown=7.5 # years
     HeatDecaytsteps=20
     KerVFracInit=0.1
@@ -594,10 +614,10 @@ if __name__ == '__main__':
     nz=60
 
 
-    Bestest=InputGenerator(tend, KerogenElementaryComp,DecompStoichiometry,\
-        DecompFrequency,DecompActivationEnergy, DecompFreeVolume, tcooldown, \
-        HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,porosity,reservoirdepth,reservoirthickness,\
-        wastedepth,wastethickness,nx,nz)
+    Bestest=InputGenerator(tend, KerogenElementaryComp,KerogenDensity,CokeDensity,\
+        DecompStoichiometry,DecompFrequency,DecompActivationEnergy, DecompFreeVolume, \
+        tcooldown,HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,porosity,\
+        reservoirdepth,reservoirthickness,wastedepth,wastethickness,nx,nz)
     Bestest.Compute_HeatRadiation(makeplot=makeplots)
     Bestest.Compute_HeatOfReaction()
     Bestest.Compute_PTIsothermLinearEqn(0.1,makeplots=makeplots)
