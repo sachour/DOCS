@@ -8,73 +8,6 @@ mpl.rcParams['axes.edgecolor'] = 'gray'
 mpl.rcParams['font.size'] = 15
 mpl.rcParams['font.family'] = 'Arial'
 
-if __name__ == '__main__':
-    # Parameters for best estimate
-    tend=100.
-    KerogenElementaryComp=np.array([159.,180.,16.,3.,2.])
-    # DecompStoichiometry=np.array([[1.,5.,5.,1.],[1.,1.,3.04348,0.04348]])
-    DecompStoichiometry=np.array([[1.,5.,5.,1.],[0.,23.,70.,1.]])
-    DecompFrequency=np.array([5.0e16,5.0e15]) # frequency s^-1
-    DecompActivationEnergy=np.array([245.,245.*1.1])*1.0e3 # Activation energy kJ/mol * 1000J/kJ
-    DecompFreeVolume=33.0e-6 # m^3
-    KerogenDensity=1.46 # g/cc
-    CokeDensity=2.97 # g/cc
-    tcooldown=7.5 # years
-    HeatDecaytsteps=20
-    KerVFracInit=0.1
-    PTIsothermtreaction=5. #yrs
-    porosity=0.3
-    reservoirthickness=120. # m
-    reservoirdepth=120. # m
-    wastedepth=40. # m
-    wastethickness=40. # m
-    wasteradius=0.5 # m
-    makeplots=False
-    nx=100
-    nz=120
-
-
-    Bestest=InputGenerator(tend, KerogenElementaryComp,KerogenDensity,CokeDensity,\
-        DecompStoichiometry,DecompFrequency,DecompActivationEnergy, DecompFreeVolume, \
-        tcooldown,HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,porosity,\
-        reservoirdepth,reservoirthickness,wastedepth,wastethickness,nx,nz)
-    Bestest.Compute_HeatRadiation(makeplot=makeplots)
-    Bestest.Compute_HeatOfReaction()
-    Bestest.Compute_PTIsothermLinearEqn(0.1,makeplots=makeplots)
-    Bestest.Import_BaseXML()
-    Bestest.Update_XML('BestEstimate.xml')
-
-
-
-    # # Parameters for conservative estimate
-    # tend=100.
-    # KerogenElementaryComp=np.array([159.,180.,16.,3.,2.])
-    # DecompStoichiometry=np.array([[1.,3.,2.,1.],\
-    #                             [0.,11.,33.,1.]])
-    # DecompFrequency=np.array([5.0e16,5.0e15]) # frequency s^-1
-    # DecompActivationEnergy=np.array([245.,245.*1.1])*1.0e3 # Activation energy kJ/mol * 1000J/kJ
-    # DecompFreeVolume=33.0e-6 # m^3
-    # tcooldown=1.0 # years
-    # HeatDecaytsteps=20
-    # KerVFracInit=0.1
-    # PTIsothermtreaction=5. #yrs
-    # porosity=0.3
-    # reservoirthickness=60. # m
-    # wastedepth=48. # m
-    # wastethickness=5. # m
-    # wasteradius=0.5 # m
-    # nx=100
-    # nz=20
-
-
-    # constest=InputGenerator(tend, KerogenElementaryComp,DecompStoichiometry,\
-    #     DecompFrequency,DecompActivationEnergy, DecompFreeVolume, tcooldown, \
-    #     HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,porosity,reservoirthickness,\
-    #     wastedepth,wastethickness,nx,nz)
-
-    # constest.Compute_HeatRadiation()
-    # constest.Compute_HeatOfReaction()
-    # constest.Compute_PTIsothermLinearEqn(0.1)
 
 class InputGenerator(object):
     """docstring for InputGenerator.
@@ -174,43 +107,56 @@ class InputGenerator(object):
         self.nx=nx
         self.ny=1
         self.nz=nz
+
+        # Elementary composition for the oil and gas
         self.zoil=np.array([10.,20.,0.,0.,0.])
         self.zgas=np.array([2.,6.,0.,0.,0.])
         self.R=8.3144598 # Ideal Gas constant
+
+        # Radiation heat model power law exponent coefficient. It assumes the
+        # time variable is expressed in units of years.
         self.Rada=-0.7467
+        # Radiation heat model power law multiplier coefficient. It assumes the
+        # time variable is expressed in units of years and the heat is expressed
+        # in kW per tonne of U.
         self.Radc=20.23e3
-        self.Rad1Month=98489.# Hedin reports that after 40 years the heat output
-        # rate was 1300 W per ton of Uranium. This corresponds to ~1.3% of the heat
-        # generation rate measured 1 month after the nuclear waste exits the reactor.
-        # https://www.osti.gov/etdeweb/servlets/purl/587853
-        # The model for the heat decay in the following months is also fit to
-        # data provided by Hedin.
+
+        self.Rad1Month=98489.
+        '''Hedin reports that after 40 years the heat output
+        rate was 1300 W per ton of Uranium. This corresponds to ~1.3% of the heat
+        generation rate measured 1 month after the nuclear waste exits the reactor.
+        https://www.osti.gov/etdeweb/servlets/purl/587853
+        The model for the heat decay in the following months is also fit to
+        data provided by Hedin.'''
 
         # The bottom should follow the order: Kerogen, Oil, Gas, Coke
         self.MWt = np.zeros(4)
+        # This is the molecular weight of each atom in the order C H O N S
         self.MWtElements=np.array([12.,1.,16.,14.,32.])
         self.MWt[0]=np.dot(self.MWtElements,self.zker)
+        # Total number of gridblocks
         self.n=nx*nz
         self.ReactionHeat_mol=0. # Units of J/mol of kerogen
         self.ReactionHeat_gker=0. # Units of J/g of kerogen
         self.ReactionHeat_ggas=0. # Units of J/g of mobile hydrocarbon
+
+        # PT Isotherm linear equation
         self.slopeLinMod=np.zeros(2)
         self.yinterLinMod=np.zeros(2)
+
+        # volume of nuclear waste
         self.wav=np.pi*self.war**2.*self.wah
         # ========================================================================
         # ====EDIT BELOW TO ADD MORE OPTIONS TO CHANGE THE URANIUM DENSITY =======
         # ====SOLID WASTE CONTAINERS=============================================
         # ========================================================================
         if FuelSource=='Uranium':
-            FuelDensity=19.0
+            self.FuelDensity=19.0
         elif FuelSource=='Uraninite':
-            FuelDensity=8.5
+            self.FuelDensity=8.5
         # ========================================================================
         # ========================================================================
         # ========================================================================
-        self.wam=FuelDensity*self.wav
-
-        print('Total mass of uranium is', self.wam,' tonnes')
 
         # Computing the elementary composition of coke yielded by reactions 1 and 2
         self.zcoke1 = np.array([self.zker[0]*self.s[0,0]-self.zoil[0]*self.s[0,1]-\
@@ -289,7 +235,8 @@ class InputGenerator(object):
                         generated to compare the discretized heat decay rate and
                         continuous model.'''
         # Widths of each time step
-        # barw=np.exp((np.log(self.tend)-np.log(tstart))/nbins*np.arange(nbins))
+        self.wam=self.FuelDensity*self.wav # Mass of nuclear waste
+        print('Total mass of uranium is', self.wam,' tonnes')
         # Time at the edge of each time section
         baredges=np.logspace(np.log10(tstart),np.log10(self.tend),num=nbins+1)
         barw=baredges[1:]-baredges[:-1]
@@ -392,8 +339,7 @@ class InputGenerator(object):
             yinter[i,1:]=np.polyfit(np.log(fits[:,0]),fits[:,2*i+2],1)
             slopef=np.poly1d(slope[i,1:])
             yinterf=np.poly1d(yinter[i,1:])
-            # print('S_ker='+str(massfraction[i]*100)+'%. Slope  :',slopef)
-            # print('S_ker='+str(massfraction[i]*100)+'%. y-inter:',yinterf,'\n')
+
             if makeplots:
                 ax.semilogx(Time,slopef(np.log(Time)),motifs[i]+'-',
                     label='S$_{ker}$='+str(massfraction[i]*100)+'%')
