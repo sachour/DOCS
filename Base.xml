@@ -127,7 +127,7 @@ Permeability = permFactor * pow(10, 10 * (porosity) - 5) * 0.986923E-15;
 
 <Tables>
     <Table3D name="InitPressure"   x_file="x" y_file="y" z_file="z" voxel_file="InitPressure" interpolation="1"/>
-    <Table1D name="fluxtable"   coord="0.0 3.15e8 6.3e8 9.45e8 12.60e8"
+    <Table1D name="fluxtable"   coord="0.0,3.15e8,6.3e8,9.45e8,12.60e8"
     value="1.0e3 8.0e2 6.0e2 4.0e2 2.0e2"
      />
 </Tables>
