@@ -165,7 +165,7 @@ class InputGenerator(object):
         given by the user in fname.'''
         # Changing the table contianing the values for the decay of radiation heat
         self.InputRoot[7][1].set('coord',' , '.join(map(str, self.Radt*86400.*365.)))
-        self.InputRoot[7][1].set('value',' , '.join(map(str, self.RadH/self.resh)))
+        self.InputRoot[7][1].set('value',' , '.join(map(str, self.RadH*11.25/360./self.resh)))
         self.InputRoot[6][0].set('scale',str(self.resh/self.nz))
         # print(self.InputRoot[6][0].attrib)
 
@@ -189,9 +189,8 @@ class InputGenerator(object):
         self.InputRoot[3][0].set('point1',"0.0 0.0 "+str(self.wad-self.wah))
         self.InputRoot[3][0].set('point2',"0.0 0.0 "+str(self.wad))
         self.InputRoot[4][0].set('endtime',str(self.tend*86400.*365.))
-        # print(self.InputRoot[4][0].attrib)
-        # print(self.InputRoot[5][6].attrib)
-        # print(self.InputRoot[0][0].attrib['KerogenDecompHeat'])
+
+
         self.InputTree.write(fname)
 
     def Compute_HeatRadiation(self,tstart=0.01,nbins=10,makeplot=True):
@@ -340,12 +339,12 @@ class InputGenerator(object):
     def Compute_PTIsothermSlope(self):
         ''' This method compute the slope of the PT isotherm for kerogen
         decomposition at the given residence time self.tr. Units: Pa/degree C '''
-        return (self.slopeLinMod[0]*np.log(self.tr)+self.slopeLinMod[1])*1.0e6
+        return (self.slopeLinMod[0]*np.log(self.tr)+self.slopeLinMod[1])
 
     def Compute_PTIsothermYinter(self):
         ''' This method compute the y-intercept of the PT isotherm for kerogen
         decomposition at the given residence time self.tr. Units: Pa '''
-        return (self.yinterLinMod[0]*np.log(self.tr)+self.yinterLinMod[1])*1.0e6
+        return (self.yinterLinMod[0]*np.log(self.tr)+self.yinterLinMod[1])
 
     def Compute_pyrolysis(self,P,T,t,Comp='gas'):
         ''' This method computes the concentration of the component given by the
@@ -354,19 +353,9 @@ class InputGenerator(object):
         T           = Temperature. Units : Kelvin. Dimensions must be the same as P
         t           = Reaction time. Units: seconds. Dimensions: Scalar if P and
                     T are arrays, otherwise, it may be an array. '''
-        # print('T0',T)
-        # print('P0',P)
+
         k1=self.A[0]*np.exp(-np.divide(self.E[0]+P*self.V,self.R*T))
         k2=self.A[1]*np.exp(-np.divide(self.E[1]+P*self.V,self.R*T))
-        # print('T1',T)
-        # print('P1',P)
-        # print('k1',k1)
-        # print('k2',k2)
-        # print('MWt',self.MWt)
-        # print('A',self.A)
-        # print('E',self.E)
-        # print('V',self.V)
-
 
         if Comp=='gas':
             return (self.s[0,2]*(1.0-np.exp(-k1*t))+self.s[0,1]*(self.s[1,2]/self.s[1,1])*\
