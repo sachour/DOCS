@@ -46,17 +46,15 @@ class InputGenerator(object):
     HeatDecaytsteps         = Number of rows in the tabulated decaying heat
                             radiation.
 
-    PTIsothermSker          = Constant mass fraction line along which to define
-                            the isotherm in Pressure-Temperature (PT) space for
-                            full conversion from oil to gas. The concentration
-                            in PT space is determined by a kinetic reaction model.
-                            Units: fraction
+    PorosityInit            = Initial porosity. Does not include the volume
+                            fraction occupied by the kerogen. Units: fraction
 
-    PTIsothermPTIsothermtreaction     = Time of reaction used in the kinetic model to
+    KerVFracInit            = Initial rock volume fraction occupied by the kerogen.
+                            Units: fraction.
+
+    PTIsothermtreaction     = Time of reaction used in the kinetic model to
                             compute the PT isotherm line at a given mass fraction.
                             Units: years
-
-    porosity                = Porosity. Units: fraction
 
     reservoirheight         = Total height of the reservoir. Units: m
 
@@ -77,7 +75,7 @@ class InputGenerator(object):
 
     def __init__(self, tend, KerogenElementaryComp, DecompStoichiometry,\
         DecompFrequency,DecompActivationEnergy, DecompFreeVolume, tcooldown, \
-        HeatDecaytsteps,PTIsothermSker,PTIsothermtreaction,porosity,reservoirheight,\
+        HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,PorosityInit,reservoirheight,\
         wastedepth,wasteheight,nx,nz,wasteradius=0.5,FuelSource='Uranium'):
         self.tend = tend
         self.zker = KerogenElementaryComp
@@ -87,13 +85,13 @@ class InputGenerator(object):
         self.V = DecompFreeVolume
         self.tcd = tcooldown
         self.tsteps = HeatDecaytsteps
-        self.Sker = PTIsothermSker
         self.tr = PTIsothermtreaction
-        self.por = porosity
+        self.KerVFrac = KerVFracInit
+        self.por = PorosityInit
         self.resh=reservoirheight
         self.wah=wasteheight
         self.war=wasteradius
-        self.wd=wastedepth
+        self.wad=wastedepth
         self.nx=nx
         self.ny=1
         self.nz=nz
@@ -152,11 +150,43 @@ class InputGenerator(object):
             self.s[1,1]*self.s[0,1]/self.s[0,0])*self.MWt[2]/self.MWt[0]
 
     def Import_BaseXML(self,fname='Base.xml'):
-		self.InputTree=ET.parse(fname)
-		self.InputRoot=self.BaseInputTree.get_root()
-	def Update_XML(self,fname):
-		print(self.InputRoot['Tables'].tag)
-		self.InputTree.write(fname)
+        ''' This method imports the base xml input file. It take as an optional
+        input the name of the Base input file'''
+        self.InputTree=ET.parse(fname)
+        self.InputRoot=self.InputTree.getroot()
+
+    def Update_XML(self,fname):
+        ''' This method modifies the XML tree to include the new values it
+        previously recalculated and creates a new input file with the  name
+        given by the user in fname.'''
+        # Changing the table contianing the values for the decay of radiation heat
+        self.InputRoot[7][1].set('coord',' '.join(map(str, self.Radt)))
+        self.InputRoot[7][1].set('value',' '.join(map(str, self.RadH/self.resh)))
+        self.InputRoot[6][0].set('scale',str(self.resh/self.nz))
+        # print(self.InputRoot[6][0].attrib)
+
+        # Changing the decomposition heat
+        self.InputRoot[0][0].set('KerogenDecompHeat',str(self.ReactionHeat_ggas*1.0e3))
+
+        # Changing the PT isotherm equation
+        self.InputRoot[0][0].set('KerogenDecompEquationParameter',\
+            str(self.Compute_PTIsothermSlope())+' '+str(self.Compute_PTIsothermYinter()))
+
+        # Changing the Molecular wieght, prosity, initial kerogen saturation
+        self.InputRoot[0][0].set('MWker',str(self.MWt[0]))
+        self.InputRoot[5][2].set('value',str(1.0-self.KerVFrac/(self.por+self.KerVFrac)))
+        self.InputRoot[5][6].set('value',str(self.por+self.KerVFrac))
+
+        # Changing the Reservoir thickness, thickness of waste package, waste depth,numbers of gridblocks, end of simulation time
+        self.InputRoot[1].set('zcoords','0. '+str(self.resh))
+        self.InputRoot[1].set('nz',str(self.nz))
+        self.InputRoot[3][0].set('point1',"0.0 0.0 "+str(self.resh-self.wad-self.wah))
+        self.InputRoot[3][0].set('point2',"0.0 0.0 "+str(self.resh-self.wad))
+        self.InputRoot[4][0].set('endtime',str(self.tend*86400.*365.))
+        # print(self.InputRoot[4][0].attrib)
+        # print(self.InputRoot[5][6].attrib)
+        # print(self.InputRoot[0][0].attrib['KerogenDecompHeat'])
+        self.InputTree.write(fname)
 
     def Compute_HeatRadiation(self,tstart=0.01,nbins=10,makeplot=True):
         ''' This method computes the table representing the decaying heat by the
@@ -175,7 +205,7 @@ class InputGenerator(object):
         # Time at the edge of each time section
         baredges=np.logspace(np.log10(tstart),np.log10(self.tend),num=nbins+1)
         barw=baredges[1:]-baredges[:-1]
-        self.Radt=baredges[1:]
+        self.Radt=baredges[:-1]
         # Center of each bar on a log scale
         bart=0.5*(baredges[1:]+baredges[:-1])
         # Heat at each row int he tabulated heat decay model
@@ -301,6 +331,16 @@ class InputGenerator(object):
             plt.savefig('PTLinModelParam.png',dpi=100)
             plt.close()
 
+    def Compute_PTIsothermSlope(self):
+        ''' This method compute the slope of the PT isotherm for kerogen
+        decomposition at the given residence time self.tr. Units: Pa/degree C '''
+        return (self.slopeLinMod[0]*np.log(self.tr)+self.slopeLinMod[1])*1.0e6
+
+    def Compute_PTIsothermYinter(self):
+        ''' This method compute the y-intercept of the PT isotherm for kerogen
+        decomposition at the given residence time self.tr. Units: Pa '''
+        return (self.yinterLinMod[0]*np.log(self.tr)+self.yinterLinMod[1])*1.0e6
+
     def Compute_pyrolysis(self,P,T,t,Comp='gas'):
         ''' This method computes the concentration of the component given by the
         variable Comp after t seconds. The inputs are as follows:
@@ -368,6 +408,8 @@ class InputGenerator(object):
         if makeplots:
             plt.figure(figsize=(20,10))
             fig,axs=plt.subplots(3,3,sharex=True,sharey=True,figsize=(8,6))
+        else:
+            axs=np.zeros((3,3))
         fits=np.zeros((9,n*2+1))
         for i in range(3):
             for j in range(3):
@@ -544,12 +586,12 @@ if __name__ == '__main__':
     DecompFreeVolume=33.0e-6 # m^3
     tcooldown=7.5 # years
     HeatDecaytsteps=20
-    PTIsothermSker=0.1
+    KerVFracInit=0.1
     PTIsothermtreaction=5. #yrs
     porosity=0.3
-    reservoirheight=60. # m
-    wastedepth=48. # m
-    wasteheight=5. # m
+    reservoirheight=120. # m
+    wastedepth=60. # m
+    wasteheight=30. # m
     wasteradius=0.5 # m
     nx=100
     nz=20
@@ -557,11 +599,14 @@ if __name__ == '__main__':
 
     Bestest=InputGenerator(tend, KerogenElementaryComp,DecompStoichiometry,\
         DecompFrequency,DecompActivationEnergy, DecompFreeVolume, tcooldown, \
-        HeatDecaytsteps,PTIsothermSker,PTIsothermtreaction,porosity,reservoirheight,\
+        HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,porosity,reservoirheight,\
         wastedepth,wasteheight,nx,nz)
-    Bestest.Compute_HeatRadiation()
+    Bestest.Compute_HeatRadiation(makeplot=False)
     Bestest.Compute_HeatOfReaction()
-    Bestest.Compute_PTIsothermLinearEqn(0.1)
+    Bestest.Compute_PTIsothermLinearEqn(0.1,makeplots=False)
+    Bestest.Import_BaseXML()
+    Bestest.Update_XML('BestEstimate.xml')
+
 
 
     # # Parameters for conservative estimate
@@ -574,7 +619,7 @@ if __name__ == '__main__':
     # DecompFreeVolume=33.0e-6 # m^3
     # tcooldown=1.0 # years
     # HeatDecaytsteps=20
-    # PTIsothermSker=0.1
+    # KerVFracInit=0.1
     # PTIsothermtreaction=5. #yrs
     # porosity=0.3
     # reservoirheight=60. # m
@@ -587,7 +632,7 @@ if __name__ == '__main__':
 
     # constest=InputGenerator(tend, KerogenElementaryComp,DecompStoichiometry,\
     #     DecompFrequency,DecompActivationEnergy, DecompFreeVolume, tcooldown, \
-    #     HeatDecaytsteps,PTIsothermSker,PTIsothermtreaction,porosity,reservoirheight,\
+    #     HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,porosity,reservoirheight,\
     #     wastedepth,wasteheight,nx,nz)
 
     # constest.Compute_HeatRadiation()
