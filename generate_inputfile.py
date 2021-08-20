@@ -169,8 +169,10 @@ class InputGenerator(object):
         self.InputRoot[0][0].set('KerogenDecompHeat',str(self.ReactionHeat_ggas*1.0e3))
 
         # Changing the PT isotherm equation
-        self.InputRoot[0][0].set('KerogenDecompEquationParameter',\
-            str(self.Compute_PTIsothermSlope())+' '+str(self.Compute_PTIsothermYinter()))
+        self.InputRoot[0][0].set('KerogenDecompIsothermSlope',\
+            str(self.Compute_PTIsothermSlope()))
+        self.InputRoot[0][0].set('KerogenDecompIsothermYinter',\
+            str(self.Compute_PTIsothermYinter()))
 
         # Changing the Molecular wieght, prosity, initial kerogen saturation
         self.InputRoot[0][0].set('MWker',str(self.MWt[0]))
