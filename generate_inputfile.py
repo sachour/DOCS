@@ -188,12 +188,12 @@ class InputGenerator(object):
         # Changing the Molecular wieght, prosity, initial kerogen saturation
         self.InputRoot[0][0].set('MWker',str(self.MWt[0]))
         cokemassfractionofkerogen=1.0-self.Compute_pyrolysis(1.,1.,1.,Comp='maxgas')
-        print('cokemassfractionofkerogen',cokemassfractionofkerogen)
+        # print('cokemassfractionofkerogen',cokemassfractionofkerogen)
         cokevolumefractionofkerogen=cokemassfractionofkerogen*self.rhoker/self.rhocoke
-        print('cokevolumefractionofkerogen',cokevolumefractionofkerogen)
+        # print('cokevolumefractionofkerogen',cokevolumefractionofkerogen)
         densityofgasinkerogen=(self.rhoker-cokevolumefractionofkerogen*self.rhocoke)/\
             (1.0-cokevolumefractionofkerogen)
-        print('Kerogen simulated density',densityofgasinkerogen)
+        # print('Kerogen simulated density',densityofgasinkerogen)
         self.InputRoot[0][0].set('KerogenDens',str(densityofgasinkerogen*1.0e3)) # Simulator seems to take density in units of kg/m^3
         self.InputRoot[5][2].set('value',str(1.0-self.KerVFrac/(self.por+self.KerVFrac)))
         self.InputRoot[5][6].set('value',str(self.por+self.KerVFrac))
@@ -604,14 +604,14 @@ if __name__ == '__main__':
     KerVFracInit=0.1
     PTIsothermtreaction=5. #yrs
     porosity=0.3
-    reservoirthickness=60. # m
-    reservoirdepth=50. # m
-    wastedepth=3.01 # m
-    wastethickness=5.02 # m
+    reservoirthickness=120. # m
+    reservoirdepth=120. # m
+    wastedepth=40. # m
+    wastethickness=40. # m
     wasteradius=0.5 # m
     makeplots=False
     nx=100
-    nz=60
+    nz=120
 
 
     Bestest=InputGenerator(tend, KerogenElementaryComp,KerogenDensity,CokeDensity,\
