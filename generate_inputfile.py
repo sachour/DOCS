@@ -160,7 +160,7 @@ class InputGenerator(object):
         previously recalculated and creates a new input file with the  name
         given by the user in fname.'''
         # Changing the table contianing the values for the decay of radiation heat
-        self.InputRoot[7][1].set('coord',' '.join(map(str, self.Radt)))
+        self.InputRoot[7][1].set('coord',' '.join(map(str, self.Radt*86400.*365.)))
         self.InputRoot[7][1].set('value',' '.join(map(str, self.RadH/self.resh)))
         self.InputRoot[6][0].set('scale',str(self.resh/self.nz))
         # print(self.InputRoot[6][0].attrib)
@@ -601,9 +601,9 @@ if __name__ == '__main__':
         DecompFrequency,DecompActivationEnergy, DecompFreeVolume, tcooldown, \
         HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,porosity,reservoirheight,\
         wastedepth,wasteheight,nx,nz)
-    Bestest.Compute_HeatRadiation(makeplot=False)
+    Bestest.Compute_HeatRadiation(makeplot=True)
     Bestest.Compute_HeatOfReaction()
-    Bestest.Compute_PTIsothermLinearEqn(0.1,makeplots=False)
+    Bestest.Compute_PTIsothermLinearEqn(0.1,makeplots=True)
     Bestest.Import_BaseXML()
     Bestest.Update_XML('BestEstimate.xml')
 
