@@ -133,7 +133,7 @@ Permeability = permFactor * pow(10, 10 * (porosity) - 5) * 0.986923E-15;
 </Tables>
 
 <Partition>
-  <SpatialPartition xpar="7" ypar="1" zpar="4" />
+  <SpatialPartition xpar="6" ypar="1" zpar="6" />
 </Partition>
 
 <Output  writePlot="1" writeRestart="0" plot_interval="5e6"  restart_interval="21000000.0"
