@@ -600,6 +600,7 @@ if __name__ == '__main__':
     wastedepth=3.01 # m
     wastethickness=5.02 # m
     wasteradius=0.5 # m
+    makeplots=False
     nx=100
     nz=60
 
@@ -608,9 +609,9 @@ if __name__ == '__main__':
         DecompFrequency,DecompActivationEnergy, DecompFreeVolume, tcooldown, \
         HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,porosity,reservoirdepth,reservoirthickness,\
         wastedepth,wastethickness,nx,nz)
-    Bestest.Compute_HeatRadiation(makeplot=True)
+    Bestest.Compute_HeatRadiation(makeplot=makeplots)
     Bestest.Compute_HeatOfReaction()
-    Bestest.Compute_PTIsothermLinearEqn(0.1,makeplots=True)
+    Bestest.Compute_PTIsothermLinearEqn(0.1,makeplots=makeplots)
     Bestest.Import_BaseXML()
     Bestest.Update_XML('BestEstimate.xml')
 
