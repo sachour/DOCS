@@ -56,13 +56,15 @@ class InputGenerator(object):
                             compute the PT isotherm line at a given mass fraction.
                             Units: years
 
-    reservoirheight         = Total height of the reservoir. Units: m
+    reservoirthickness      = Total thickness of the reservoir. Units: m
+
+    reservoirdepth          = Total depth of the reservoir. Units: m
 
     wastedepth              = Depth of the reservoir, measured as the distance
                             between the top of the reservoir and the top of the
                             waste cannisters . Units: m
 
-    wasteheight             = Total height of the heat-emitting waste cannisters.
+    wastethickness          = Total thickness of the heat-emitting waste cannisters.
                             Units: m
 
     wasteradius             = Total radius of the waste cannisters. Must be less
@@ -75,8 +77,9 @@ class InputGenerator(object):
 
     def __init__(self, tend, KerogenElementaryComp, DecompStoichiometry,\
         DecompFrequency,DecompActivationEnergy, DecompFreeVolume, tcooldown, \
-        HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,PorosityInit,reservoirheight,\
-        wastedepth,wasteheight,nx,nz,wasteradius=0.5,FuelSource='Uranium'):
+        HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,PorosityInit,\
+        reservoirdepth,reservoirthickness,wastedepth,wastethickness,nx,nz,\
+        wasteradius=0.5,FuelSource='Uranium'):
         self.tend = tend
         self.zker = KerogenElementaryComp
         self.s = DecompStoichiometry
@@ -88,8 +91,9 @@ class InputGenerator(object):
         self.tr = PTIsothermtreaction
         self.KerVFrac = KerVFracInit
         self.por = PorosityInit
-        self.resh=reservoirheight
-        self.wah=wasteheight
+        self.resh=reservoirthickness
+        self.resd=reservoirdepth
+        self.wah=wastethickness
         self.war=wasteradius
         self.wad=wastedepth
         self.nx=nx
@@ -180,10 +184,10 @@ class InputGenerator(object):
         self.InputRoot[5][6].set('value',str(self.por+self.KerVFrac))
 
         # Changing the Reservoir thickness, thickness of waste package, waste depth,numbers of gridblocks, end of simulation time
-        self.InputRoot[1].set('zcoords','0. '+str(self.resh))
+        self.InputRoot[1].set('zcoords',str(self.resd-self.resh)+' '+str(self.resd))
         self.InputRoot[1].set('nz',str(self.nz))
-        self.InputRoot[3][0].set('point1',"0.0 0.0 "+str(self.resh-self.wad-self.wah))
-        self.InputRoot[3][0].set('point2',"0.0 0.0 "+str(self.resh-self.wad))
+        self.InputRoot[3][0].set('point1',"0.0 0.0 "+str(self.wad-self.wah))
+        self.InputRoot[3][0].set('point2',"0.0 0.0 "+str(self.wad))
         self.InputRoot[4][0].set('endtime',str(self.tend*86400.*365.))
         # print(self.InputRoot[4][0].attrib)
         # print(self.InputRoot[5][6].attrib)
@@ -591,18 +595,19 @@ if __name__ == '__main__':
     KerVFracInit=0.1
     PTIsothermtreaction=5. #yrs
     porosity=0.3
-    reservoirheight=120. # m
-    wastedepth=60. # m
-    wasteheight=30. # m
+    reservoirthickness=60. # m
+    reservoirdepth=50. # m
+    wastedepth=3.01 # m
+    wastethickness=5.02 # m
     wasteradius=0.5 # m
     nx=100
-    nz=20
+    nz=60
 
 
     Bestest=InputGenerator(tend, KerogenElementaryComp,DecompStoichiometry,\
         DecompFrequency,DecompActivationEnergy, DecompFreeVolume, tcooldown, \
-        HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,porosity,reservoirheight,\
-        wastedepth,wasteheight,nx,nz)
+        HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,porosity,reservoirdepth,reservoirthickness,\
+        wastedepth,wastethickness,nx,nz)
     Bestest.Compute_HeatRadiation(makeplot=True)
     Bestest.Compute_HeatOfReaction()
     Bestest.Compute_PTIsothermLinearEqn(0.1,makeplots=True)
@@ -624,9 +629,9 @@ if __name__ == '__main__':
     # KerVFracInit=0.1
     # PTIsothermtreaction=5. #yrs
     # porosity=0.3
-    # reservoirheight=60. # m
+    # reservoirthickness=60. # m
     # wastedepth=48. # m
-    # wasteheight=5. # m
+    # wastethickness=5. # m
     # wasteradius=0.5 # m
     # nx=100
     # nz=20
@@ -634,8 +639,8 @@ if __name__ == '__main__':
 
     # constest=InputGenerator(tend, KerogenElementaryComp,DecompStoichiometry,\
     #     DecompFrequency,DecompActivationEnergy, DecompFreeVolume, tcooldown, \
-    #     HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,porosity,reservoirheight,\
-    #     wastedepth,wasteheight,nx,nz)
+    #     HeatDecaytsteps,KerVFracInit,PTIsothermtreaction,porosity,reservoirthickness,\
+    #     wastedepth,wastethickness,nx,nz)
 
     # constest.Compute_HeatRadiation()
     # constest.Compute_HeatOfReaction()
